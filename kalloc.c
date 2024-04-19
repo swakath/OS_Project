@@ -52,7 +52,7 @@ freerange(void *vstart, void *vend)
   for(; p + PGSIZE <= (char*)vend; p += PGSIZE)
   {
     kfree(p);
-    kmem.num_free_pages+=1;
+    // kmem.num_free_pages+=1;
   }
     
 }

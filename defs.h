@@ -174,6 +174,7 @@ void            uartputc(int);
 
 // vm.c
 void            seginit(void);
+pte_t*          walkpgdir(pde_t *pgdir, const void *va, int alloc);
 void            kvmalloc(void);
 pde_t*          setupkvm(void);
 char*           uva2ka(pde_t*, char*);

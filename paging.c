@@ -22,12 +22,19 @@
 // }
 
 void pagingintr(){
-    // cprintf("Page Swap INTERRUPT HANDLER");
+    cprintf("Debug: Pageing Intrupt Handler \n");
+    struct proc *curproc;
+    uint pfa;
+    pte_t *pte;
+    
     // Accesing the process that caused pagefault
-    struct proc* curproc=myproc();
-    // 
-    uint pfa=rcr2();
-    pte_t* pte=walkpgdir(curproc->pgdir, (void *)pfa,0 );
+    curproc=myproc();
+    // Accessing the page addr that caused the pagefault 
+    pfa=rcr2();
+    // Accessing the page table entery of the fault page.
+    pte=walkpgdir(curproc->pgdir, (void *)pfa,0);
+    
+    // Checking in pagefault is due to COW
     if(((uint)(*pte)&PTE_P))
     {
         uint pa=PTE_ADDR(*pte);

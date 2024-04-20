@@ -31,19 +31,28 @@ void pagingintr(){
     curproc=myproc();
     // Accessing the page addr that caused the pagefault 
     pfa=rcr2();
-    // Accessing the page table entery of the fault page.
+    // Accessing the page table entry of the fault page.
     pte=walkpgdir(curproc->pgdir, (void *)pfa,0);
     
     // Checking in pagefault is due to COW
     if(((uint)(*pte)&PTE_P))
     {
+        // cprintf("Debug: I am inside the page fault occurs and trying to solve using page write in memory\n");
         uint pa=PTE_ADDR(*pte);
+        // cprintf("Debug: %p\n",*pte);
         char * mem;
         if((mem = kalloc()) == 0)
-          panic("memory isnot available for page copy");
+          panic("memory is not available for page copy");
         memmove(mem, (char*)P2V(pa), PGSIZE);
-        *pte=PTE_FLAGS(*pte)|PTE_ADDR((uint)V2P(mem))|PTE_W;
+        *pte=PTE_FLAGS(*pte)|PTE_W;
+        *pte=(*pte)|PTE_ADDR((uint)V2P(mem));
+
+        kfree(P2V(pa));
+        // cprintf("Debug: page handelling succesfull\n");
     }
+    // else{
+    //     panic("page is not present");
+    // }
     // else{
     // swap_in();
     // }

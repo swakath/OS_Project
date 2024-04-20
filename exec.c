@@ -77,6 +77,7 @@ exec(char *path, char **argv)
       goto bad;
     ustack[3+argc] = sp;
   }
+
   ustack[3+argc] = 0;
 
   ustack[0] = 0xffffffff;  // fake return PC

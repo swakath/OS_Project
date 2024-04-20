@@ -1,6 +1,6 @@
 # Prerequisites
 *.d
-
+*.tar*
 # Object files
 *.o
 *.ko

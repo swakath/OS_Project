@@ -327,9 +327,12 @@ copyuvm(pde_t *pgdir, uint sz)
       panic("copyuvm: pte should exist");
     if(!(*pte & PTE_P))
       panic("copyuvm: page not present");
-    (*pte)=(*pte)&(~PTE_W);
+    cprintf("Debug: before write unset %p\n",*pte);
+    *pte=((*pte)&(~PTE_W));
+    cprintf("Debug: after write unset%p\n",*pte);
     pa = PTE_ADDR(*pte);
     flags = PTE_FLAGS(*pte);
+    inc_rmap(pa);
     // if((mem = kalloc()) == 0)
     //   goto bad;
     // memmove(mem, (char*)P2V(pa), PGSIZE);

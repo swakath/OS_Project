@@ -9,6 +9,60 @@
 #include "mmu.h"
 #include "spinlock.h"
 
+
+struct{
+  int use_lock;
+  struct spinlock lock;
+  int ref_count[PHYSTOP/PGSIZE];
+}rmap;
+
+
+int 
+get_rmap(uint pa)
+{ 
+  int rmap_index;
+  if(rmap.use_lock)
+    acquire(&rmap.lock);
+  rmap_index = ((pa>>PTXSHIFT)&(0xFFFFF));
+  int value=rmap.ref_count[rmap_index];
+  if(rmap.use_lock)
+    release(&rmap.lock);
+  return value;
+}
+void 
+set_rmap(uint pa,int value)
+{
+  int rmap_index;
+  if(rmap.use_lock)
+    acquire(&rmap.lock);
+  rmap_index = ((pa>>PTXSHIFT)&(0xFFFFF));
+  rmap.ref_count[rmap_index]=value;
+  if(rmap.use_lock)
+    release(&rmap.lock);
+}
+void 
+inc_rmap(uint pa)
+{
+  int rmap_index;
+  if(rmap.use_lock)
+    acquire(&rmap.lock);
+  rmap_index = ((pa>>PTXSHIFT)&(0xFFFFF));
+  rmap.ref_count[rmap_index]++;
+  if(rmap.use_lock)
+    release(&rmap.lock);
+}
+void 
+dec_rmap(uint pa)
+{
+  int rmap_index;
+  if(rmap.use_lock)
+    acquire(&rmap.lock);
+  rmap_index = ((pa>>PTXSHIFT)&(0xFFFFF));
+  rmap.ref_count[rmap_index]--;
+  if(rmap.use_lock)
+    release(&rmap.lock);
+}
+
 void freerange(void *vstart, void *vend);
 extern char end[]; // first address after kernel loaded from ELF file
                    // defined by the kernel linker script in kernel.ld
@@ -69,6 +123,10 @@ kfree(char *v)
   if((uint)v % PGSIZE || v < end || V2P(v) >= PHYSTOP)
     panic("kfree");
 
+  dec_rmap(V2P(v));
+  if(get_rmap(V2P(v))>0)
+    return;
+
   // Fill with junk to catch dangling refs.
   memset(v, 1, PGSIZE);
 
@@ -97,8 +155,8 @@ kalloc(void)
   {
     kmem.freelist = r->next;
     kmem.num_free_pages-=1;
+    set_rmap(V2P(r),1); 
   }
-    
   if(kmem.use_lock)
     release(&kmem.lock);
   return (char*)r;

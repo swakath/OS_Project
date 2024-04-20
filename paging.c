@@ -22,40 +22,30 @@
 // }
 
 void pagingintr(){
-    cprintf("Debug: Pageing Intrupt Handler \n");
+    //cprintf("Debug: Pageing Intrupt Handler \n");
     struct proc *curproc;
-    uint pfa;
+    uint pfa, pa, flags;
     pte_t *pte;
-    
+    char *mem;
     // Accesing the process that caused pagefault
     curproc=myproc();
     // Accessing the page addr that caused the pagefault 
     pfa=rcr2();
     // Accessing the page table entry of the fault page.
     pte=walkpgdir(curproc->pgdir, (void *)pfa,0);
-    
-    // Checking in pagefault is due to COW
-    if(((uint)(*pte)&PTE_P))
-    {
-        // cprintf("Debug: I am inside the page fault occurs and trying to solve using page write in memory\n");
-        uint pa=PTE_ADDR(*pte);
-        // cprintf("Debug: %p\n",*pte);
-        char * mem;
-        if((mem = kalloc()) == 0)
-          panic("memory is not available for page copy");
-        memmove(mem, (char*)P2V(pa), PGSIZE);
-        *pte=PTE_FLAGS(*pte)|PTE_W;
-        *pte=(*pte)|PTE_ADDR((uint)V2P(mem));
+    pa = PTE_ADDR(*pte);
+    flags = PTE_FLAGS(*pte);
 
-        kfree(P2V(pa));
-        // cprintf("Debug: page handelling succesfull\n");
+    // Checking is pagefault due to COW
+    if((flags & PTE_P))
+    {
+      if((mem = kalloc()) == 0)
+        panic("memory is not available for page copy");
+      memmove(mem, (char*)P2V(pa), PGSIZE);
+      flags|=PTE_W;
+      *pte= PTE_ADDR((uint)V2P(mem)) | flags;
+      kfree(P2V(pa));
     }
-    // else{
-    //     panic("page is not present");
-    // }
-    // else{
-    // swap_in();
-    // }
     return;
 }
 

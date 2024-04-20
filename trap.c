@@ -79,7 +79,7 @@ trap(struct trapframe *tf)
     break;
   case T_PGFLT:
     pagingintr();
-    // lapiceoi();
+    lapiceoi();
     break;
   //PAGEBREAK: 13
   default:

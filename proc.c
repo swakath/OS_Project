@@ -194,7 +194,7 @@ fork(void)
     kfree(np->kstack);
     np->kstack = 0;
     np->state = UNUSED;
-    cprintf("Debug: copyuvm failed\n");
+    //cprintf("Debug: copyuvm failed\n");
     return -1;
   }
   np->sz = curproc->sz;

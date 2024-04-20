@@ -547,3 +547,17 @@ procdump(void)
     cprintf("\n");
   }
 }
+
+
+//updating rmap array for corresponding process with virtual 
+void add_to_rmap(int pid, uint vpa)
+{
+  struct proc* p;
+  for(p=ptable.proc;p<&ptable.proc[NPROC];p++)
+  {
+    if(p->pid==pid) break;
+  }
+  if(p>=&ptable.proc[NPROC])
+      panic("adding page of process that not exist.");
+  
+}

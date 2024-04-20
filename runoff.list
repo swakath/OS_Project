@@ -19,6 +19,7 @@ spinlock.h
 spinlock.c
 
 # processes
+paging.c
 vm.c
 proc.h
 proc.c

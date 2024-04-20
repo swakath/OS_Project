@@ -49,6 +49,7 @@ even: proc.c   # VERY important
 # process memory management
 #     allocuvm deallocuvm freevm
 left: vm.c
+left: paging.c
 
 even: kalloc.c  # mild preference
 

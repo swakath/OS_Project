@@ -21,11 +21,6 @@ struct superblock {
   uint bmapstart;    // Block number of first free map block
 };
 
-struct rmap_ds{
-  uint virtual_addr;
-  unsigned  long long int process_indexes;
-};
-
 
 
 #define NDIRECT 12

@@ -190,7 +190,7 @@ void            clearpteu(pde_t *pgdir, char *uva);
 
 //paging.c
 void pagingintr(void);
-void initrmap();
+// void initrmap();
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))

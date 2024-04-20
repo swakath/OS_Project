@@ -318,7 +318,7 @@ copyuvm(pde_t *pgdir, uint sz)
   pde_t *d;
   pte_t *pte;
   uint pa, i, flags;
-  char *mem;
+  // char *mem;
 
   if((d = setupkvm()) == 0)
     return 0;
@@ -334,9 +334,8 @@ copyuvm(pde_t *pgdir, uint sz)
     //   goto bad;
     // memmove(mem, (char*)P2V(pa), PGSIZE);
     // if(mappages(d, (void*)i, PGSIZE, V2P(mem), flags) < 0) {
-    if(())
     if(mappages(d, (void*)i, PGSIZE,pa, flags) < 0) {
-      kfree(mem);
+      // kfree(mem);
       goto bad;
     }
   }

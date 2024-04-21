@@ -132,7 +132,7 @@ void            yield(void);
 void            print_rss(void);
 int             find_proc_index(struct proc*);
 struct proc*    find_proc_from_index(int);
-void            add_process_index_to_rmap(struct proc*);
+void            update_process_index_to_rmap(struct proc*,uint);
 
 // swtch.S
 void            swtch(struct context**, struct context*);

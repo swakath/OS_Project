@@ -198,9 +198,9 @@ fork(void)
     return -1;
   }
   //adding parent process index to physical page refrence in rmap
-  add_process_index_to_rmap(curproc);
+  update_process_index_to_rmap(curproc,(uint)1);
   //adding child process index to physical page refrence in rmap
-  add_process_index_to_rmap(np);
+  update_process_index_to_rmap(np,(uint)1);
 
   np->sz = curproc->sz;
   np->rss = np->sz;
@@ -271,6 +271,7 @@ exit(void)
   // Jump into the scheduler, never to return.
   curproc->state = ZOMBIE;
   free_swap(curproc);
+  update_process_index_to_rmap(curproc,(uint)0);
   sched();
   panic("zombie exit");
 }
@@ -649,7 +650,7 @@ struct proc* find_proc_from_index(int cur_proc_index)
   return curproc;
 }
 
-void add_process_index_to_rmap(struct proc* curproc)
+void update_process_index_to_rmap(struct proc* curproc, uint value)
 {
   pte_t *pte;
   uint pa, i;
@@ -663,7 +664,8 @@ void add_process_index_to_rmap(struct proc* curproc)
     if(!(*pte & PTE_P))
       panic("copyuvm: page not present");
     pa=PTE_ADDR(*pte);
-    set_pindex_status(pa,process_index,(uint)1);
+    set_pindex_status(pa,process_index,value);
   }
 }
+
 

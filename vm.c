@@ -327,9 +327,9 @@ copyuvm(pde_t *pgdir, uint sz)
       panic("copyuvm: pte should exist");
     if(!(*pte & PTE_P))
       panic("copyuvm: page not present");
-    cprintf("Debug: before write unset %p\n",*pte);
+    // cprintf("Debug: before write unset %p\n",*pte);
     *pte=((*pte)&(~PTE_W));
-    cprintf("Debug: after write unset%p\n",*pte);
+    // cprintf("Debug: after write unset%p\n",*pte);
     pa = PTE_ADDR(*pte);
     flags = PTE_FLAGS(*pte);
     inc_rmap(pa);
@@ -342,10 +342,12 @@ copyuvm(pde_t *pgdir, uint sz)
       goto bad;
     }
   }
+  lcr3(V2P(pgdir));
   return d;
 
 bad:
   freevm(d);
+  lcr3(V2P(pgdir));
   return 0;
 }
 

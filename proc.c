@@ -203,6 +203,7 @@ fork(void)
   add_process_index_to_rmap(np);
 
   np->sz = curproc->sz;
+  np->rss = np->sz;
   np->parent = curproc;
   *np->tf = *curproc->tf;
 
@@ -269,6 +270,7 @@ exit(void)
 
   // Jump into the scheduler, never to return.
   curproc->state = ZOMBIE;
+  free_swap(curproc);
   sched();
   panic("zombie exit");
 }
@@ -554,6 +556,53 @@ procdump(void)
   }
 }
 
+struct proc* find_victim_process()
+{
+    struct proc* sp=ptable.proc;
+    acquire(&ptable.lock);
+
+    for(struct proc* p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->rss> sp->rss)
+      {
+        sp=p;
+      }
+    }
+    release(&ptable.lock);
+    return sp;
+}
+
+
+pte_t*
+find_victim_page(struct proc* p)
+{
+  for(int b=0;b<p->sz;b+=4096)
+  {
+    pte_t* pg=walkpgdir(p->pgdir,(void *)b,0);
+    // cprintf("page table entry:%p ",*pg);
+    if(pg && (*pg& PTE_P)==PTE_P && (*pg &PTE_A)==0)
+    {
+      // cprintf("  a................................%p  ",b);
+      return pg;
+    }
+  }
+  return 0;
+}
+
+void make_unaccessed_page(struct proc* p)
+{
+  uint cnt=p->rss;
+  cnt=cnt/10+1;
+  for(int b=0;cnt && b<p->sz;b+=4096)
+  {
+    pte_t* pg=walkpgdir(p->pgdir,(void *)b,0);
+    if(pg && ((*pg& PTE_P)==PTE_P) && ((*pg &PTE_A)==PTE_A))
+    {
+      *pg=(*pg)& (~PTE_A);
+      cnt-=4096;
+      // cprintf("count: %d",cnt);
+    }
+  }
+}
 
 //updating rmap array for corresponding process with virtual 
 // void add_to_rmap(int pid, uint vpa)

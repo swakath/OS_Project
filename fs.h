@@ -16,11 +16,18 @@ struct superblock {
   uint nblocks;      // Number of data blocks
   uint ninodes;      // Number of inodes.
   uint nlog;         // Number of log blocks
+  uint nswap;        // Number of swap blocks
   uint logstart;     // Block number of first log block
   uint inodestart;   // Block number of first inode block
   uint bmapstart;    // Block number of first free map block
+  uint swapstart;    // Block number of first swap block
 };
 
+struct slotinfo{
+    int is_free;
+    int page_perm;
+    int pid;
+};
 
 
 #define NDIRECT 12

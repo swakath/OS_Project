@@ -15,6 +15,9 @@ void            binit(void);
 struct buf*     bread(uint, uint);
 void            brelse(struct buf*);
 void            bwrite(struct buf*);
+struct proc*    find_victim_process(void);
+pte_t*          find_victim_page(struct proc*);
+void            make_unaccessed_page(struct proc*);
 
 // console.c
 void            consoleinit(void);
@@ -198,7 +201,11 @@ int             copyout(pde_t*, uint, void*, uint);
 void            clearpteu(pde_t *pgdir, char *uva);
 
 //paging.c
-void pagingintr(void);
+void            pagingintr(void);
+void            initpageswap(uint);
+void            swap_out();
+void            swap_in();
+void            free_swap(struct proc*);
 // void initrmap();
 
 // number of elements in fixed-size array

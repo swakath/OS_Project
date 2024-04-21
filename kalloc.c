@@ -159,7 +159,7 @@ void
 kfree(char *v)
 {
   struct run *r;
-
+  // cprintf(" page address %p \n",v);
   if((uint)v % PGSIZE || v < end || V2P(v) >= PHYSTOP)
     panic("kfree");
 
@@ -199,6 +199,14 @@ kalloc(void)
   }
   if(kmem.use_lock)
     release(&kmem.lock);
+  
+  if(!r)
+  {
+    swap_out();
+    // cprintf("page allocated when r==0\n");
+    return kalloc();
+  }
+  // cprintf("page address that allocated:%p\n",(char*)r);
   return (char*)r;
 }
 uint 

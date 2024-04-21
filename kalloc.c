@@ -20,10 +20,10 @@ struct{
 void initrmap(){
   if(rmap.use_lock)
     acquire(&rmap.lock);
-    for(int ind = 0; ind< (PHYSTOP/PGSIZE);++ind){
-      rmap.ref_count[ind] = 0;
-      rmap.process_idxs[ind] = 0;
-    }
+  for(int ind = 0; ind< (PHYSTOP/PGSIZE);++ind){
+    rmap.ref_count[ind] = 0;
+    rmap.process_idxs[ind] = 0;
+  }
   if(rmap.use_lock)
     release(&rmap.lock);
 }

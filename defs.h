@@ -15,8 +15,6 @@ void            binit(void);
 struct buf*     bread(uint, uint);
 void            brelse(struct buf*);
 void            bwrite(struct buf*);
-struct proc*    find_victim_process(void);
-struct pageinfo*          find_victim_page(struct proc*);
 void            make_unaccessed_page(struct proc*);
 
 // console.c
@@ -137,6 +135,8 @@ void            print_rss(void);
 int             find_proc_index(struct proc*);
 struct proc*    find_proc_from_index(int);
 void            update_process_index_to_rmap(struct proc*,uint);
+struct proc*    find_victim_process(void);
+struct pageinfo   find_victim_page(struct proc*);
 
 // swtch.S
 void            swtch(struct context**, struct context*);
@@ -210,6 +210,9 @@ void            initpageswap(uint);
 void            swap_out();
 void            swap_in();
 void            free_swap(struct proc*);
+void swap_out_update_pte_for_pindex(long long pindx, uint vaddr, uint sbn);
+void swap_in_update_pte_for_pindex(long long pindx, uint vaddr, uint pg, uint flags);
+
 // void initrmap();
 
 // number of elements in fixed-size array

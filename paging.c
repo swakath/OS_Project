@@ -46,16 +46,26 @@ void pagingintr(){
       *pte= PTE_ADDR((uint)V2P(mem)) | flags;
       kfree(P2V(pa));
     }
+    else{
+      swap_in();
+    }
     return;
 }
 
 void free_swap(struct proc* p)
 {
+  uint pindx = find_proc_index(p);
+  long long mask = 1<<pindx;
   for(int i=0;i<SSIZE;i++)
   {
-    if(slot_array[i].pid==p->pid && slot_array[i].is_free==0)
+    if(((slot_array[i].pindex & mask) == mask) && (slot_array[i].is_free==0))
     {
-      slot_array[i].is_free=1;
+      slot_array[i].pindex = (slot_array[i].pindex & (~mask));
+      slot_array[i].ref_count--;
+      if(slot_array[i].ref_count <= 0){
+        slot_array[i].ref_count = 0;
+        slot_array[i].is_free = 1;
+      }
     }
   }
 }
@@ -88,7 +98,6 @@ uint write_to_swap(char* vpa)
 
 void read_from_swap(uint sbn, char* pa)
 {
-    slot_array[sbn/8].is_free=1;
     for(int i=0;i<8;i++)
     {
         struct buf* b=bread(ROOTDEV,sbn+i);
@@ -96,30 +105,33 @@ void read_from_swap(uint sbn, char* pa)
         brelse(b);
         pa+=512;
     }
+    slot_array[sbn/8].is_free=1;
 }
 
 void
 swap_in(){
     long long pindxs;
-    uint flags, ref_cnt;
-    struct proc* curproc=myproc();
-    uint pfa=rcr2();
-    pte_t* pte=walkpgdir(curproc->pgdir, (void *)pfa,0);
-    uint sbn=(*pte)>>PTXSHIFT;
-    char* pa=kalloc();
-    uint pg=(V2P((uint)pa))&(~0xfff);
+    uint pfa, flags, ref_cnt, sbn, pgaddr;
+    char* pa;
+    pte_t* pte;
+    struct proc* curproc;
+
+    curproc=myproc();
+    
+    pfa=rcr2();
+    pte=walkpgdir(curproc->pgdir, (void *)pfa,0);
+    sbn=(*pte)>>PTXSHIFT;
+    pa = kalloc();
+    pgaddr = (V2P(pa)&(~0xFFF));
     
     flags = slot_array[sbn/8].page_perm;
     ref_cnt = slot_array[sbn/8].ref_count;
     pindxs = slot_array[sbn/8].pindex;
-
-
-
-    
-    (*pte)=((uint)(pg)|slot_array[sbn/8].page_perm);
     read_from_swap(sbn, pa);
-    slot_array[sbn/8].pid=curproc->pid;
-    curproc->rss+=4096;
+
+    swap_in_update_pte_for_pindex(pindxs, pfa, pgaddr, flags);
+    set_pindex_value(pgaddr, pindxs);
+    set_rmap(pgaddr,ref_cnt);
 
     // Updating 
     // cprintf("process id thats page swapped in: %d and  page table entry %p \n",curproc->pid,(*pte));
@@ -128,7 +140,7 @@ swap_in(){
 void
 swap_out(){
     struct proc* p;
-    struct pageinfo *pg;
+    struct pageinfo pg;
     pte_t* pte;
     uint vaddr;
     uint pa, flags;
@@ -140,28 +152,30 @@ swap_out(){
 
     // cprintf("\nDebug Victim IPD [%d], Page [%p]\n", p->pid, *pg);
     // cprintf("\n  Debug Victim IPD [%d], Page [%p]\n", p->pid, pg);
-    while(pg == 0)
+    while(pg.pte == 0)
     {
         // cprintf("Hello i am going to unaccessed some pages.\n");
         make_unaccessed_page(p);
         pg=find_victim_page(p);
     }
 
-    pte = pg->pte;
-    vaddr = pg->vaddr;
+    pte = pg.pte;
+    vaddr = pg.vaddr;
     pa = PTE_ADDR(*pte);
     flags = PTE_FLAGS(*pte);
     vpa=(char*)(P2V(pa));    
     
     // cprintf("   victim page %p:\n",pa);
     uint sbn = write_to_swap(vpa);
-    pindxs = get_pindex_value(pte);
+    pindxs = get_pindex_value(*pte);
     slot_array[sbn/8].page_perm = flags;
     slot_array[sbn/8].pindex = pindxs;
     slot_array[sbn/8].ref_count = get_rmap(pa);
 
     swap_out_update_pte_for_pindex(pindxs, vaddr, sbn);
     (*pte)=((sbn<<PTXSHIFT)&(~0xfff));
+    set_pindex_value(pa, 0);
+    set_rmap(pa,1);
     kfree(vpa);
     // cprintf("\n  Debug Victim IPD [%d], Page [%p]\n", p->pid, *pg);
     //p->rss-=4096;
@@ -173,19 +187,26 @@ void swap_out_update_pte_for_pindex(long long pindx, uint vaddr, uint sbn){
   long long mask=1;
   struct proc* curProc;
   pte_t* curPte;
-  uint pa;
-  char* vpa;
   for(int indx = 0; indx < 64; ++indx){
     if((pindx & (mask<<indx))){
       curProc = find_proc_from_index(indx);
       curPte = walkpgdir(curProc->pgdir, (void *)vaddr,0);
-      pa = PTE_ADDR(*curPte);
       (*curPte) = ((sbn<<PTXSHIFT)&(~0xFFF));
       curProc->rss-=4096;
     }
-  }
-  set_pindex_value(pa, 0);
-  set_rmap(pa,1);
+  } 
 }
 
-void 
+void swap_in_update_pte_for_pindex(long long pindx, uint vaddr, uint pg, uint flags){
+  long long mask=1;
+  struct proc* curProc;
+  pte_t* curPte;
+  for(int indx = 0; indx < 64; ++indx){
+    if((pindx & (mask<<indx))){
+      curProc = find_proc_from_index(indx);
+      curPte = walkpgdir(curProc->pgdir, (void *)vaddr,0);
+      (*curPte) = pg | flags | PTE_P;
+      curProc->rss+=4096;
+    }
+  }
+}

@@ -573,10 +573,10 @@ struct proc* find_victim_process()
 }
 
 
-struct pageinfo* find_victim_page(struct proc* p)
+struct pageinfo find_victim_page(struct proc* p)
 {
   struct pageinfo ret;
-
+  ret.pte = 0;
   for(uint b=0;b<p->sz;b+=4096)
   {
     pte_t* pg=walkpgdir(p->pgdir,(void *)b,0);
@@ -586,10 +586,11 @@ struct pageinfo* find_victim_page(struct proc* p)
       // cprintf("  a................................%p  ",b);
       ret.pte = pg;
       ret.vaddr = b;
-      return &ret;
+      return ret;
     }
   }
-  return 0;
+  ret.pte = 0;
+  return ret;
 }
 
 void make_unaccessed_page(struct proc* p)
@@ -665,7 +666,7 @@ void update_process_index_to_rmap(struct proc* curproc, uint value)
     if((pte = walkpgdir(curproc->pgdir, (void *) i, 0)) == 0)
       panic("copyuvm: pte should exist");
     if(!(*pte & PTE_P))
-      panic("copyuvm: page not present");
+      continue;
     pa=PTE_ADDR(*pte);
     set_pindex_status(pa,process_index,value);
   }

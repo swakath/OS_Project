@@ -52,6 +52,12 @@ struct proc {
   char name[16];               // Process name (debugging)
 };
 
+struct pageinfo
+{
+  pte_t* pte;                 // Physical Address of the page
+  uint   vaddr;                 // Virtual Address of the page in the process
+};
+
 // Process memory is laid out contiguously, low addresses first:
 //   text
 //   original data and bss

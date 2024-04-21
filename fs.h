@@ -24,9 +24,10 @@ struct superblock {
 };
 
 struct slotinfo{
-    int is_free;
-    int page_perm;
-    int pid;
+    uint is_free;
+    uint page_perm;
+    long long  pindex;
+    uint ref_count;
 };
 
 

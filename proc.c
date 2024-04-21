@@ -197,6 +197,11 @@ fork(void)
     //cprintf("Debug: copyuvm failed\n");
     return -1;
   }
+  //adding parent process index to physical page refrence in rmap
+  add_process_index_to_rmap(curproc);
+  //adding child process index to physical page refrence in rmap
+  add_process_index_to_rmap(np);
+
   np->sz = curproc->sz;
   np->parent = curproc;
   *np->tf = *curproc->tf;
@@ -551,14 +556,65 @@ procdump(void)
 
 
 //updating rmap array for corresponding process with virtual 
-void add_to_rmap(int pid, uint vpa)
-{
+// void add_to_rmap(int pid, uint vpa)
+// {
+//   struct proc* p;
+//   for(p=ptable.proc;p<&ptable.proc[NPROC];p++)
+//   {
+//     if(p->pid==pid) break;
+//   }
+//   if(p>=&ptable.proc[NPROC])
+//       panic("adding page of process that not exist.");
+  
+// }
+
+int find_proc_index(struct proc* curproc){
   struct proc* p;
-  for(p=ptable.proc;p<&ptable.proc[NPROC];p++)
+  int i=0;
+
+  acquire(&ptable.lock);
+  for(p=ptable.proc;p<&ptable.proc[NPROC];p++,i++)
   {
-    if(p->pid==pid) break;
+    if(p->pid==curproc->pid){
+      release(&ptable.lock);
+        return i;
+    }
   }
   if(p>=&ptable.proc[NPROC])
       panic("adding page of process that not exist.");
-  
+  release(&ptable.lock);
+
+  return i;
 }
+
+struct proc* find_proc_from_index(int cur_proc_index)
+{
+  struct proc * curproc;
+  if(cur_proc_index>=64)
+    panic("Invalid process index");
+
+  acquire(&ptable.lock);
+  curproc=ptable.proc+cur_proc_index;
+  release(&ptable.lock);
+
+  return curproc;
+}
+
+void add_process_index_to_rmap(struct proc* curproc)
+{
+  pte_t *pte;
+  uint pa, i;
+  uint process_index;
+
+  process_index=find_proc_index(curproc);
+
+  for(i = 0; i < curproc->sz; i += PGSIZE){
+    if((pte = walkpgdir(curproc->pgdir, (void *) i, 0)) == 0)
+      panic("copyuvm: pte should exist");
+    if(!(*pte & PTE_P))
+      panic("copyuvm: page not present");
+    pa=PTE_ADDR(*pte);
+    set_pindex_status(pa,process_index,(uint)1);
+  }
+}
+

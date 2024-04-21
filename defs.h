@@ -73,7 +73,8 @@ int             get_rmap(uint);
 void            set_rmap(uint,int);
 void            inc_rmap(uint);
 void            dec_rmap(uint);            
-
+int             get_pindex_status(uint, uint);
+void             set_pindex_status(uint, uint, uint);
 // kbd.c
 void            kbdintr(void);
 
@@ -126,6 +127,9 @@ int             wait(void);
 void            wakeup(void*);
 void            yield(void);
 void            print_rss(void);
+int             find_proc_index(struct proc*);
+struct proc*    find_proc_from_index(int);
+void            add_process_index_to_rmap(struct proc*);
 
 // swtch.S
 void            swtch(struct context**, struct context*);

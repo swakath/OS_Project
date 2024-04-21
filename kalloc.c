@@ -14,6 +14,8 @@ struct{
   int use_lock;
   struct spinlock lock;
   int ref_count[PHYSTOP/PGSIZE];
+  int virtual_paddr[PHYSTOP/PGSIZE];
+  long long process_idxs[PHYSTOP/PGSIZE];
 }rmap;
 
 
@@ -59,6 +61,42 @@ dec_rmap(uint pa)
     acquire(&rmap.lock);
   rmap_index = ((pa>>PTXSHIFT)&(0xFFFFF));
   rmap.ref_count[rmap_index]--;
+  if(rmap.use_lock)
+    release(&rmap.lock);
+}
+
+int get_pindex_status(uint pa, uint p_index)
+{
+  int rmap_index, pindex_status=0;
+  long long val=1;
+  if(p_index>=64 || p_index<0)
+    panic("wrong pindex in get_pindex_status");
+  if(rmap.use_lock)
+    acquire(&rmap.lock);
+  rmap_index = ((pa>>PTXSHIFT)&(0xFFFFF));
+  if((rmap.process_idxs[rmap_index])&(val<<p_index))
+    pindex_status=1;
+  if(rmap.use_lock)
+    release(&rmap.lock);
+  return pindex_status;
+}
+void set_pindex_status(uint pa, uint p_index,uint pindex_status)
+{
+  int rmap_index;
+  long long  val=1;
+  if(p_index>=64 || p_index<0)
+    panic("wrong pindex in set_pindex_status");
+
+  if(rmap.use_lock)
+    acquire(&rmap.lock);
+  rmap_index = ((pa>>PTXSHIFT)&(0xFFFFF));
+  if(pindex_status)
+  {
+    rmap.process_idxs[rmap_index] |=(val<<p_index);
+  }
+  else{
+    rmap.process_idxs[rmap_index] &=(~(val<<p_index));
+  }
   if(rmap.use_lock)
     release(&rmap.lock);
 }

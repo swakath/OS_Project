@@ -21,18 +21,6 @@ void initpageswap(uint sbstart){
     }
 }
 
-
-// struct rmap_ds rmap[2^20];  //index corresponds to physical  address;
-
-// void initrmap()
-// {
-//     for(uint i=0;i<2^20;i++)
-//     {
-//         rmap[i].virtual_addr=-1;
-//         rmap[i].process_indexes=0;
-//     }
-// }
-
 void pagingintr(){
     cprintf("Debug: Pageing Intrupt Handler \n");
     struct proc *curproc;
@@ -112,42 +100,92 @@ void read_from_swap(uint sbn, char* pa)
 
 void
 swap_in(){
+    long long pindxs;
+    uint flags, ref_cnt;
     struct proc* curproc=myproc();
     uint pfa=rcr2();
-    pte_t* pte=walkpgdir(curproc->pgdir, (void *)pfa,0 );
+    pte_t* pte=walkpgdir(curproc->pgdir, (void *)pfa,0);
     uint sbn=(*pte)>>PTXSHIFT;
-    // cprintf("page fault virtual address: %p and physical address %p\n",pfa,(*pte));
     char* pa=kalloc();
-    // cprintf("Helloooooooooooooooooooooooooo..............\n");
     uint pg=(V2P((uint)pa))&(~0xfff);
+    
+    flags = slot_array[sbn/8].page_perm;
+    ref_cnt = slot_array[sbn/8].ref_count;
+    pindxs = slot_array[sbn/8].pindex;
+
+
+
+    
     (*pte)=((uint)(pg)|slot_array[sbn/8].page_perm);
     read_from_swap(sbn, pa);
     slot_array[sbn/8].pid=curproc->pid;
     curproc->rss+=4096;
+
+    // Updating 
     // cprintf("process id thats page swapped in: %d and  page table entry %p \n",curproc->pid,(*pte));
 }
 
 void
 swap_out(){
-    struct proc* p=find_victim_process();
-    pte_t *pg;
-    pg=find_victim_page(p);
+    struct proc* p;
+    struct pageinfo *pg;
+    pte_t* pte;
+    uint vaddr;
+    uint pa, flags;
+    char* vpa; 
+    long long pindxs;
+    
+    p = find_victim_process();
+    pg = find_victim_page(p);
 
     // cprintf("\nDebug Victim IPD [%d], Page [%p]\n", p->pid, *pg);
     // cprintf("\n  Debug Victim IPD [%d], Page [%p]\n", p->pid, pg);
-    while((uint)pg==0)
+    while(pg == 0)
     {
         // cprintf("Hello i am going to unaccessed some pages.\n");
         make_unaccessed_page(p);
         pg=find_victim_page(p);
     }
-    char* pa=(char*)(P2V((*pg)&(~0xFFF)));    
+
+    pte = pg->pte;
+    vaddr = pg->vaddr;
+    pa = PTE_ADDR(*pte);
+    flags = PTE_FLAGS(*pte);
+    vpa=(char*)(P2V(pa));    
+    
     // cprintf("   victim page %p:\n",pa);
-    uint sbn= write_to_swap(pa);
-    slot_array[sbn/8].page_perm=((*pg)&(0xFFF));
-    (*pg)=((sbn<<PTXSHIFT)&(~0xfff));
-    kfree(pa);
+    uint sbn = write_to_swap(vpa);
+    pindxs = get_pindex_value(pte);
+    slot_array[sbn/8].page_perm = flags;
+    slot_array[sbn/8].pindex = pindxs;
+    slot_array[sbn/8].ref_count = get_rmap(pa);
+
+    swap_out_update_pte_for_pindex(pindxs, vaddr, sbn);
+    (*pte)=((sbn<<PTXSHIFT)&(~0xfff));
+    kfree(vpa);
     // cprintf("\n  Debug Victim IPD [%d], Page [%p]\n", p->pid, *pg);
-    p->rss-=4096;
+    //p->rss-=4096;
     // cprintf("  process id thats page swapped out: %d \n",p->pid);
 } 
+
+
+void swap_out_update_pte_for_pindex(long long pindx, uint vaddr, uint sbn){
+  long long mask=1;
+  struct proc* curProc;
+  pte_t* curPte;
+  uint pa;
+  char* vpa;
+  for(int indx = 0; indx < 64; ++indx){
+    if((pindx & (mask<<indx))){
+      curProc = find_proc_from_index(indx);
+      curPte = walkpgdir(curProc->pgdir, (void *)vaddr,0);
+      pa = PTE_ADDR(*curPte);
+      (*curPte) = ((sbn<<PTXSHIFT)&(~0xFFF));
+      curProc->rss-=4096;
+    }
+  }
+  set_pindex_value(pa, 0);
+  set_rmap(pa,1);
+}
+
+void 

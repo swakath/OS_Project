@@ -16,7 +16,7 @@ struct buf*     bread(uint, uint);
 void            brelse(struct buf*);
 void            bwrite(struct buf*);
 struct proc*    find_victim_process(void);
-pte_t*          find_victim_page(struct proc*);
+struct pageinfo*          find_victim_page(struct proc*);
 void            make_unaccessed_page(struct proc*);
 
 // console.c
@@ -67,6 +67,7 @@ extern uchar    ioapicid;
 void            ioapicinit(void);
 
 // kalloc.c
+void            initrmap();
 char*           kalloc(void);
 uint            num_of_FreePages(void);
 void            kfree(char*);
@@ -77,7 +78,10 @@ void            set_rmap(uint,int);
 void            inc_rmap(uint);
 void            dec_rmap(uint);            
 int             get_pindex_status(uint, uint);
-void             set_pindex_status(uint, uint, uint);
+void            set_pindex_status(uint, uint, uint);
+long long       get_pindex_value(uint);
+void            set_pindex_value(uint, long long);
+
 // kbd.c
 void            kbdintr(void);
 

@@ -179,6 +179,7 @@ iinit(int dev)
   }
   readsb(dev, &sb);
   initpageswap(sb.swapstart);
+  initrmap();
   cprintf("sb: size %d nblocks %d ninodes %d nlog %d nswap %d logstart %d\
           inodestart %d bmap start %d swapstart %d\n", sb.size, sb.nblocks,
           sb.ninodes, sb.nlog, sb.nswap, sb.logstart, sb.inodestart,

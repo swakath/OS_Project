@@ -572,17 +572,20 @@ struct proc* find_victim_process()
 }
 
 
-pte_t*
-find_victim_page(struct proc* p)
+struct pageinfo* find_victim_page(struct proc* p)
 {
-  for(int b=0;b<p->sz;b+=4096)
+  struct pageinfo ret;
+
+  for(uint b=0;b<p->sz;b+=4096)
   {
     pte_t* pg=walkpgdir(p->pgdir,(void *)b,0);
     // cprintf("page table entry:%p ",*pg);
     if(pg && (*pg& PTE_P)==PTE_P && (*pg &PTE_A)==0)
     {
       // cprintf("  a................................%p  ",b);
-      return pg;
+      ret.pte = pg;
+      ret.vaddr = b;
+      return &ret;
     }
   }
   return 0;

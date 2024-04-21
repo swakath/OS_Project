@@ -14,10 +14,19 @@ struct{
   int use_lock;
   struct spinlock lock;
   int ref_count[PHYSTOP/PGSIZE];
-  int virtual_paddr[PHYSTOP/PGSIZE];
   long long process_idxs[PHYSTOP/PGSIZE];
 }rmap;
 
+void initrmap(){
+  if(rmap.use_lock)
+    acquire(&rmap.lock);
+    for(int ind = 0; ind< (PHYSTOP/PGSIZE);++ind){
+      rmap.ref_count[ind] = 0;
+      rmap.process_idxs[ind] = 0;
+    }
+  if(rmap.use_lock)
+    release(&rmap.lock);
+}
 
 int 
 get_rmap(uint pa)
@@ -61,6 +70,8 @@ dec_rmap(uint pa)
     acquire(&rmap.lock);
   rmap_index = ((pa>>PTXSHIFT)&(0xFFFFF));
   rmap.ref_count[rmap_index]--;
+  if(rmap.ref_count[rmap_index] < 0)
+    rmap.ref_count[rmap_index] = 0;
   if(rmap.use_lock)
     release(&rmap.lock);
 }
@@ -80,6 +91,29 @@ int get_pindex_status(uint pa, uint p_index)
     release(&rmap.lock);
   return pindex_status;
 }
+
+long long get_pindex_value(uint pa){
+  uint rmap_index;
+  long long process_idxs;
+  if(rmap.use_lock)
+    acquire(&rmap.lock);
+  rmap_index = ((pa>>PTXSHIFT)&(0xFFFFF));
+  process_idxs=rmap.process_idxs[rmap_index];
+  if(rmap.use_lock)
+    release(&rmap.lock);
+  return process_idxs;
+}
+
+void set_pindex_value(uint pa, long long process_idxs){
+  uint rmap_index;
+  if(rmap.use_lock)
+    acquire(&rmap.lock);
+  rmap_index = ((pa>>PTXSHIFT)&(0xFFFFF));
+  rmap.process_idxs[rmap_index] = process_idxs;
+  if(rmap.use_lock)
+    release(&rmap.lock);
+}
+
 void set_pindex_status(uint pa, uint p_index,uint pindex_status)
 {
   int rmap_index;

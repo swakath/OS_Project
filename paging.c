@@ -22,7 +22,7 @@
 // }
 
 void pagingintr(){
-    //cprintf("Debug: Pageing Intrupt Handler \n");
+    cprintf("Debug: Pageing Intrupt Handler \n");
     struct proc *curproc;
     uint pfa, pa, flags;
     pte_t *pte;

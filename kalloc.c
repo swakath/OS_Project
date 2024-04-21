@@ -88,6 +88,7 @@ kinit1(void *vstart, void *vend)
 {
   initlock(&kmem.lock, "kmem");
   kmem.use_lock = 0;
+  rmap.use_lock=0;
   freerange(vstart, vend);
 }
 
@@ -96,6 +97,7 @@ kinit2(void *vstart, void *vend)
 {
   freerange(vstart, vend);
   kmem.use_lock = 1;
+  rmap.use_lock=1;
 }
 
 void

@@ -75,21 +75,21 @@ dec_rmap(uint pa)
     release(&rmap.lock);
 }
 
-int get_pindex_status(uint pa, uint p_index)
-{
-  int rmap_index, pindex_status=0;
-  long long val=1;
-  if(p_index>=64 || p_index<0)
-    panic("wrong pindex in get_pindex_status");
-  if(rmap.use_lock)
-    acquire(&rmap.lock);
-  rmap_index = ((pa>>PTXSHIFT)&(0xFFFFF));
-  if((rmap.process_idxs[rmap_index])&(val<<p_index))
-    pindex_status=1;
-  if(rmap.use_lock)
-    release(&rmap.lock);
-  return pindex_status;
-}
+// int get_pindex_status(uint pa, uint p_index)
+// {
+//   int rmap_index, pindex_status=0;
+//   long long val=1;
+//   if(p_index>=64 || p_index<0)
+//     panic("wrong pindex in get_pindex_status");
+//   if(rmap.use_lock)
+//     acquire(&rmap.lock);
+//   rmap_index = ((pa>>PTXSHIFT)&(0xFFFFF));
+//   if((rmap.process_idxs[rmap_index])&(val<<p_index))
+//     pindex_status=1;
+//   if(rmap.use_lock)
+//     release(&rmap.lock);
+//   return pindex_status;
+// }
 
 long long get_pindex_value(uint pa){
   uint rmap_index;
@@ -196,9 +196,9 @@ kfree(char *v)
   if((uint)v % PGSIZE || v < end || V2P(v) >= PHYSTOP)
     panic("kfree");
 
-  dec_rmap(V2P(v));
-  if(get_rmap(V2P(v))>0)
-    return;
+  // dec_rmap(V2P(v));
+  // if(get_rmap(V2P(v))>0)
+  //   return;
 
   // Fill with junk to catch dangling refs.
   memset(v, 1, PGSIZE);

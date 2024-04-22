@@ -270,8 +270,11 @@ exit(void)
 
   // Jump into the scheduler, never to return.
   curproc->state = ZOMBIE;
+  // cprintf("Debug: freeing swap of pid %d\n",curproc->pid);
   free_swap(curproc);
+  // cprintf("Debug: freed swap of %d\n and freing rmap\n",curproc->pid);
   update_process_index_to_rmap(curproc,(uint)0);
+  // cprintf("Debug: freed rmapof %d\n",curproc->pid);
   sched();
   panic("zombie exit");
 }
@@ -625,18 +628,20 @@ void make_unaccessed_page(struct proc* p)
 int find_proc_index(struct proc* curproc){
   struct proc* p;
   int i=0;
-
-  acquire(&ptable.lock);
+  // cprintf("Debug: Inside find_pric_index\n");
+  // acquire(&ptable.lock);
+  // cprintf("Debug: Inside find_proc_index takenlock\n");
   for(p=ptable.proc;p<&ptable.proc[NPROC];p++,i++)
   {
     if(p->pid==curproc->pid){
-      release(&ptable.lock);
+      // release(&ptable.lock);
+      // cprintf("Debug: return %d\n",i);
         return i;
     }
   }
   if(p>=&ptable.proc[NPROC])
       panic("adding page of process that not exist.");
-  release(&ptable.lock);
+  // release(&ptable.lock);
 
   return i;
 }

@@ -54,8 +54,10 @@ void pagingintr(){
 
 void free_swap(struct proc* p)
 {
+//   cprintf("Inside free swap %d:\n",p->pid);
   uint pindx = find_proc_index(p);
   long long mask = 1<<pindx;
+//   cprintf("freed pid %d:\n",p->pid);
   for(int i=0;i<SSIZE;i++)
   {
     if(((slot_array[i].pindex & mask) == mask) && (slot_array[i].is_free==0))

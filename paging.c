@@ -45,7 +45,10 @@ void pagingintr(){
       memmove(mem, (char*)P2V(pa), PGSIZE);
       flags|=PTE_W;
       *pte= PTE_ADDR((uint)V2P(mem)) | flags;
-      kfree(P2V(pa));
+      dec_rmap(pa);
+      if(get_rmap(pa) == 0){
+        kfree(P2V(pa));
+      }
     }
     else{
       cprintf("Debug: Inside swap in side\n");
@@ -139,7 +142,6 @@ swap_in(){
     // cprintf("Debug: page table entry %p\n",*pte);
     set_pindex_value(pgaddr, pindxs);
     set_rmap(pgaddr,ref_cnt);
-
     // Updating 
     // cprintf("process id thats page swapped in: %d and  page table entry %p \n",curproc->pid,(*pte));
 }
@@ -195,7 +197,7 @@ swap_out(){
     swap_out_update_pte_for_pindex(pindxs, vaddr, sbn);
     (*pte)=((sbn<<PTXSHIFT)&(~0xfff));
     set_pindex_value(pa, 0);
-    set_rmap(pa,1);
+    set_rmap(pa,0);
     kfree(vpa);
     // cprintf("\n  Debug Victim IPD [%d], Page [%p]\n", p->pid, *pg);
     //p->rss-=4096;

@@ -274,7 +274,10 @@ deallocuvm(pde_t *pgdir, uint oldsz, uint newsz)
       if(pa == 0)
         panic("kfree");
       char *v = P2V(pa);
-      kfree(v);
+      dec_rmap(pa);
+      if(get_rmap(pa)==0){
+        kfree(v);
+      }
       p->rss-=4096;
       *pte = 0;
     }

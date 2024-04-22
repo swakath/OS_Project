@@ -223,7 +223,7 @@ allocuvm(pde_t *pgdir, uint oldsz, uint newsz)
 {
   char *mem;
   uint a;
-  struct proc*p=myproc();
+  // struct proc*p=myproc();
   
   if(newsz >= KERNBASE)
     return 0;
@@ -245,7 +245,7 @@ allocuvm(pde_t *pgdir, uint oldsz, uint newsz)
       kfree(mem);
       return 0;
     }
-    p->rss+=4096;
+    // p->rss+=4096;
   }
   return newsz;
 }
@@ -259,7 +259,7 @@ deallocuvm(pde_t *pgdir, uint oldsz, uint newsz)
 {
   pte_t *pte;
   uint a, pa;
-  struct proc* p=myproc();
+  // struct proc* p=myproc();
 
   if(newsz >= oldsz)
     return oldsz;
@@ -275,7 +275,7 @@ deallocuvm(pde_t *pgdir, uint oldsz, uint newsz)
         panic("kfree");
       char *v = P2V(pa);
       kfree(v);
-      p->rss-=4096;
+      // p->rss-=4096;
       *pte = 0;
     }
   }

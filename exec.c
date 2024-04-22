@@ -106,8 +106,10 @@ exec(char *path, char **argv)
   return 0;
 
  bad:
-  if(pgdir)
+  if(pgdir){
+   curproc->rss=0;
     freevm(pgdir);
+  }
   if(ip){
     iunlockput(ip);
     end_op();

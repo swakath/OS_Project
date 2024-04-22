@@ -69,9 +69,8 @@ dec_rmap(uint pa)
   if(rmap.use_lock)
     acquire(&rmap.lock);
   rmap_index = ((pa>>PTXSHIFT)&(0xFFFFF));
-  rmap.ref_count[rmap_index]--;
-  if(rmap.ref_count[rmap_index] < 0)
-    rmap.ref_count[rmap_index] = 0;
+  if(rmap.ref_count[rmap_index] > 0)
+    rmap.ref_count[rmap_index]--;
   if(rmap.use_lock)
     release(&rmap.lock);
 }

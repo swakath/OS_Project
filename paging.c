@@ -22,7 +22,7 @@ void initpageswap(uint sbstart){
 }
 
 void pagingintr(){
-    cprintf("Debug: Pageing Intrupt Handler \n");
+    // cprintf("Debug: Pageing Intrupt Handler \n");
     struct proc *curproc;
     uint pfa, pa, flags;
     pte_t *pte;
@@ -39,6 +39,7 @@ void pagingintr(){
     // Checking is pagefault due to COW
     if((flags & PTE_P))
     {
+      // cprintf("Debug: inside present side\n");
       if((mem = kalloc()) == 0)
         panic("memory is not available for page copy");
       memmove(mem, (char*)P2V(pa), PGSIZE);
@@ -47,6 +48,7 @@ void pagingintr(){
       kfree(P2V(pa));
     }
     else{
+      cprintf("Debug: Inside swap in side\n");
       swap_in();
     }
     return;
@@ -122,6 +124,7 @@ swap_in(){
     
     pfa=rcr2();
     pte=walkpgdir(curproc->pgdir, (void *)pfa,0);
+    // cprintf("Debug: page table entry %p\n",*pte);
     sbn=(*pte)>>PTXSHIFT;
     pa = kalloc();
     pgaddr = (V2P(pa)&(~0xFFF));
@@ -130,8 +133,10 @@ swap_in(){
     ref_cnt = slot_array[sbn/8].ref_count;
     pindxs = slot_array[sbn/8].pindex;
     read_from_swap(sbn, pa);
-
+    // cprintf("Debug: page table entry %p\n",*pte);
     swap_in_update_pte_for_pindex(pindxs, pfa, pgaddr, flags);
+    (*pte)= pgaddr | flags| PTE_P;
+    // cprintf("Debug: page table entry %p\n",*pte);
     set_pindex_value(pgaddr, pindxs);
     set_rmap(pgaddr,ref_cnt);
 
@@ -139,6 +144,19 @@ swap_in(){
     // cprintf("process id thats page swapped in: %d and  page table entry %p \n",curproc->pid,(*pte));
 }
 
+void swap_in_update_pte_for_pindex(long long pindx, uint vaddr, uint pg, uint flags){
+  long long mask=1;
+  struct proc* curProc;
+  pte_t* curPte;
+  for(int indx = 0; indx < 64; ++indx){
+    if((pindx & (mask<<indx))){
+      curProc = find_proc_from_index(indx);
+      curPte = walkpgdir(curProc->pgdir, (void *)vaddr,0);
+      (*curPte) = pg | flags | PTE_P;
+      curProc->rss+=4096;
+    }
+  }
+}
 void
 swap_out(){
     struct proc* p;
@@ -197,18 +215,4 @@ void swap_out_update_pte_for_pindex(long long pindx, uint vaddr, uint sbn){
       curProc->rss-=4096;
     }
   } 
-}
-
-void swap_in_update_pte_for_pindex(long long pindx, uint vaddr, uint pg, uint flags){
-  long long mask=1;
-  struct proc* curProc;
-  pte_t* curPte;
-  for(int indx = 0; indx < 64; ++indx){
-    if((pindx & (mask<<indx))){
-      curProc = find_proc_from_index(indx);
-      curPte = walkpgdir(curProc->pgdir, (void *)vaddr,0);
-      (*curPte) = pg | flags | PTE_P;
-      curProc->rss+=4096;
-    }
-  }
 }
